@@ -5,6 +5,11 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <DocumentationFile>Vsxmd.xml</DocumentationFile>
+<!--    <PublishTrimmed>true</PublishTrimmed>-->
+<!--    <PublishReadyToRun>true</PublishReadyToRun>-->
+<!--    <PublishSingleFile>true</PublishSingleFile>-->
+<!--    <RuntimeIdentifier>win-x64</RuntimeIdentifier>-->
+    <LangVersion>8</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.2">
@@ -42,6 +47,11 @@
   <ItemGroup>
     <Content Include="..\LICENSE" Link="LICENSE" PackagePath="\" />
     <Content Include="build\Vsxmd.targets" PackagePath="build\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="OptionsTrader.Domain.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <!-- Generate the Markdown file for itself -->
   <Target Name="VsxmdPreparation" AfterTargets="PostBuildEvent">

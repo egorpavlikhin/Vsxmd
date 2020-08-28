@@ -4,6 +4,9 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using System.Text;
+using Vsxmd.Units;
+
 namespace Vsxmd
 {
     using System;
@@ -35,12 +38,12 @@ namespace Vsxmd
             {
                 if (args == null || args.Length < 1)
                 {
-                    return;
+                    //return;
+                    args = new string[] { "OptionsTrader.Domain.xml" };
                 }
-
                 string xmlPath = args[0];
                 string markdownPath = args.ElementAtOrDefault(1);
-
+                //markdownPath = @"_generated\";
                 if (string.IsNullOrWhiteSpace(markdownPath))
                 {
                     // replace extension with `md` extension
@@ -48,10 +51,54 @@ namespace Vsxmd
                 }
 
                 var document = XDocument.Load(xmlPath);
+                
+                var assemblyUnit = new AssemblyUnit(document.Root.Element("assembly"));
+
+                var memberUnits = document.Root
+                    .Element("members")
+                    .Elements("member")
+                    .Select(element => new MemberUnit(element))
+                    .Where(member => member.Kind != MemberKind.NotSupported)
+                    .GroupBy(x =>
+                    {
+                        string[] split = x.TypeName.Split('.');
+                        string @namespace = String.Join('.', split.Take(split.Length - 1));
+                        string @type = split[split.Length - 1];
+                        return @namespace;
+                    });
+
+                foreach (var @namespace in memberUnits)
+                {
+                    var tableOfContents = new TableOfContents(@namespace.AsEnumerable()
+                        .Where(m => m.Kind != MemberKind.Property)
+                        .OrderBy(member => member, MemberUnit.Comparer));
+
+                    var content = new IUnit[] { }
+                        .Concat(new[] { tableOfContents })
+                        .Concat(@namespace.AsEnumerable().OrderBy(member => member, MemberUnit.Comparer))
+                        .SelectMany(x => x.ToMarkdown())
+                        .Join("\n")
+                        .Suffix("\n");
+                    
+                    var sb = new StringBuilder();
+                    sb.AppendLine(@$"+++
+title = '{@namespace.Key}'");
+                    sb.AppendLine($"date = {DateTime.Now.ToString("o")}");
+                    sb.AppendLine("+++");
+                    sb.Append(content);
+
+                    if (!string.IsNullOrEmpty(args.ElementAtOrDefault(1)))
+                        File.WriteAllText(
+                            Path.Combine(Directory.GetCurrentDirectory(), markdownPath, @namespace.Key + ".md"),
+                            sb.ToString());
+                    else
+                        File.WriteAllText(@namespace.Key + ".md", sb.ToString());
+                }
+                
                 var converter = new Converter(document);
                 var markdown = converter.ToMarkdown();
 
-                File.WriteAllText(markdownPath, markdown);
+                //File.WriteAllText(markdownPath, markdown);
 
                 string vsxmdAutoDeleteXml = args.ElementAtOrDefault(2);
                 if (string.IsNullOrWhiteSpace(vsxmdAutoDeleteXml))

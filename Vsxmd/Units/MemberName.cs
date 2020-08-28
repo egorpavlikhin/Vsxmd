@@ -4,6 +4,8 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using static System.Globalization.CultureInfo;
+
 namespace Vsxmd.Units
 {
     using System;
@@ -29,7 +31,7 @@ namespace Vsxmd.Units
         /// <param name="paramNames">The parameter names. It is only used when member kind is <see cref="MemberKind.Constructor"/> or <see cref="MemberKind.Method"/>.</param>
         internal MemberName(string name, IEnumerable<string> paramNames)
         {
-            this.name = name;
+            this.name = name.Replace("#ctor", "Constructor", StringComparison.InvariantCulture);
             this.type = name.First();
             this.paramNames = paramNames;
         }
@@ -68,10 +70,10 @@ namespace Vsxmd.Units
             this.Kind == MemberKind.Type ||
             this.Kind == MemberKind.Constants ||
             this.Kind == MemberKind.Property
-            ? $"[{this.FriendlyName.Escape()}](#{this.Href} '{this.StrippedName}')"
+            ? $"[{this.FriendlyName.Escape()}](#{this.Href})"
             : this.Kind == MemberKind.Constructor ||
               this.Kind == MemberKind.Method
-            ? $"[{this.FriendlyName.Escape()}({this.paramNames.Join(",")})](#{this.Href} '{this.StrippedName}')"
+            ? $"[{this.FriendlyName.Escape()}({this.paramNames.Join(",")})](#{this.Href})"
             : string.Empty;
 
         /// <summary>
@@ -84,13 +86,13 @@ namespace Vsxmd.Units
         /// </example>
         internal string Caption =>
             this.Kind == MemberKind.Type
-            ? $"{this.Href.ToAnchor()}## {this.FriendlyName.Escape()} `{this.Kind.ToLowerString()}`"
+            ? $"## {this.FriendlyName.Escape()} `{this.Kind.ToLowerString()}`"
             : this.Kind == MemberKind.Constants ||
               this.Kind == MemberKind.Property
-            ? $"{this.Href.ToAnchor()}### {this.FriendlyName.Escape()} `{this.Kind.ToLowerString()}`"
+            ? $"### {this.FriendlyName.Escape()} `{this.Kind.ToLowerString()}`"
             : this.Kind == MemberKind.Constructor ||
               this.Kind == MemberKind.Method
-            ? $"{this.Href.ToAnchor()}### {this.FriendlyName.Escape()}({this.paramNames.Join(",")}) `{this.Kind.ToLowerString()}`"
+            ? $"### {this.FriendlyName.Escape()}({this.paramNames.Join(",")}) `{this.Kind.ToLowerString()}`"
             : string.Empty;
 
         /// <summary>
@@ -126,11 +128,26 @@ namespace Vsxmd.Units
             ? this.NameSegments.NthLast(2)
             : string.Empty;
 
-        private string Href => this.name
-            .Replace('.', '-')
-            .Replace(':', '-')
-            .Replace('(', '-')
-            .Replace(')', '-');
+        private string Href
+        {
+            get
+            {
+                string href = $"{this.FriendlyName.Escape().ToLower()}";
+                if (this.Kind == MemberKind.Constructor
+                    || this.Kind == MemberKind.Method)
+                {
+                    href += $"{this.paramNames.Select(x => x.ToLowerInvariant()).Join("")}";
+                }
+
+                href += $" {this.Kind.ToLowerString()}";
+                return href
+                    .Replace('.', '-')
+                    .Replace(':', '-')
+                    .Replace('(', '-')
+                    .Replace(' ', '-')
+                    .Replace(')', '-');
+            }
+        }
 
         private string StrippedName =>
             this.name.Substring(2);
@@ -144,7 +161,7 @@ namespace Vsxmd.Units
         private IEnumerable<string> NameSegments =>
             this.LongName.Split('.');
 
-        private string FriendlyName =>
+        internal string FriendlyName =>
             this.Kind == MemberKind.Type
             ? this.TypeShortName
             : this.Kind == MemberKind.Constants ||

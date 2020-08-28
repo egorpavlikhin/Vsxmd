@@ -49,8 +49,8 @@ namespace Vsxmd.Units
         /// </summary>
         /// <param name="content">The content.</param>
         /// <returns>The escaped content.</returns>
-        internal static string Escape(this string content) =>
-            content.Replace("`", @"\`", StringComparison.InvariantCulture);
+        internal static string Escape(this string content) => content;
+            //content.Replace("`", @"\`", StringComparison.InvariantCulture);
 
         /// <summary>
         /// Generate an anchor for the <paramref name="href"/>.
@@ -58,7 +58,7 @@ namespace Vsxmd.Units
         /// <param name="href">The href.</param>
         /// <returns>The anchor for the <paramref name="href"/>.</returns>
         internal static string ToAnchor(this string href) =>
-            $"<a name='{href}'></a>\n";
+            $"\n<a name='{href}'></a>\n";
 
         /// <summary>
         /// Generate "to here" link for the <paramref name="href"/>.

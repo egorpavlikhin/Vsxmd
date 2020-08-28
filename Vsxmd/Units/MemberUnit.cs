@@ -17,6 +17,8 @@ namespace Vsxmd.Units
     internal class MemberUnit : BaseUnit
     {
         private readonly MemberName name;
+        
+        private static IDictionary<string, bool> OpenTables = new Dictionary<string, bool>();
 
         static MemberUnit()
         {
@@ -66,18 +68,11 @@ namespace Vsxmd.Units
                 ? Enumerable.Empty<string>()
                 : new[]
                 {
-                    "##### Summary",
+                    "",
                     "*Inherit from parent.*",
                 };
 
-        private IEnumerable<string> Namespace =>
-            this.Kind != MemberKind.Type
-            ? Enumerable.Empty<string>()
-            : new[]
-            {
-                $"##### Namespace",
-                $"{this.name.Namespace}",
-            };
+        private IEnumerable<string> Namespace => Enumerable.Empty<string>();
 
         private IEnumerable<string> Summary =>
             SummaryUnit.ToMarkdown(this.GetChild("summary"));
@@ -110,8 +105,37 @@ namespace Vsxmd.Units
             SeealsoUnit.ToMarkdown(this.GetChildren("seealso"));
 
         /// <inheritdoc />
-        public override IEnumerable<string> ToMarkdown() =>
-            new[] { this.name.Caption }
+        // public override IEnumerable<string> ToMarkdown() =>
+        //     new[] { this.name.Caption }
+        //         .Concat(this.Namespace)
+        //         .Concat(this.InheritDoc)
+        //         .Concat(this.Summary)
+        //         .Concat(this.Returns)
+        //         .Concat(this.Params)
+        //         .Concat(this.Typeparams)
+        //         .Concat(this.Exceptions)
+        //         .Concat(this.Permissions)
+        //         .Concat(this.Example)
+        //         .Concat(this.Remarks)
+        //         .Concat(this.Seealsos);
+        public override IEnumerable<string> ToMarkdown()
+        {
+            if (this.Kind == MemberKind.Property)
+            {
+                var result = new List<string>();
+                if (!OpenTables.ContainsKey(this.name.TypeName))
+                {
+                    OpenTables.Add(this.name.TypeName, true);
+                    result.Add("### Properties \n|Name|Description|");
+                    result.Add("| ---- | ---- |");
+                }
+                
+                result.Add($"|{this.name.FriendlyName}|{this.Summary.Join("")}|");
+                return result.ToArray();
+            }
+            else
+            {
+                var result = new[] { this.name.Caption }
                 .Concat(this.Namespace)
                 .Concat(this.InheritDoc)
                 .Concat(this.Summary)
@@ -123,6 +147,10 @@ namespace Vsxmd.Units
                 .Concat(this.Example)
                 .Concat(this.Remarks)
                 .Concat(this.Seealsos);
+                
+                return result;
+            }
+        }
 
         /// <summary>
         /// Complement a type unit if the member unit <paramref name="group"/> does not have one.
